@@ -4,14 +4,17 @@ import SelectField from "@/components/common/SelectField";
 import HttpServices from "@/service/httpServices";
 
 export default function EditSnapshotPolicyForm() {
+    // Initialize HttpServices for API calls
     const httpServices = new HttpServices();
 
-    const [id, setId] = useState(null);
-    const [formError, setFormError] = useState(null);
-    const [error, setError] = useState(null);
-    const [loading, setLoading] = useState(false);
+    // State variables for form management
+    const [id, setId] = useState(null); // ID of the snapshot policy
+    const [formError, setFormError] = useState(null); // Error message for form validation
+    const [error, setError] = useState(null); // General error message
+    const [loading, setLoading] = useState(false); // Loading state for async operations
 
     const [formData, setFormData] = useState({
+        // Form data structure for snapshot policy
         policy_name: '',
         apply_to_directory: '',
         schedule_type: 'Daily or Weekly',
@@ -25,6 +28,7 @@ export default function EditSnapshotPolicyForm() {
     });
 
     useEffect(() => {
+        // Fetch initial data for the form based on stored cluster ID
         const cluster = window.localStorage.getItem("cluster");
         if (cluster) {
             const parsedCluster = JSON.parse(cluster);
@@ -37,8 +41,10 @@ export default function EditSnapshotPolicyForm() {
 
     const fetchFormInitialData = async (id) => {
         try {
-            setLoading(true);
+            setLoading(true); // Set loading state
+            // Fetch snapshot policy data by ID
             const { data } = await httpServices.getClusterSnapPolicyById(id);
+            // Destructure relevant data from the response
             const {
                 policy_name,
                 apply_to_directory,
@@ -51,6 +57,7 @@ export default function EditSnapshotPolicyForm() {
                 lock_snapshots
             } = data;
 
+            // Process snapshot time and selected days
             const snapShotTime = snapshot_time.split(":");
             const selectedDays = Object.entries(days)
                 .filter(([key, value]) => value)
@@ -58,6 +65,7 @@ export default function EditSnapshotPolicyForm() {
 
             const isNeverDeleteSnapShot = Object.keys(delete_schedule).length === 0;
 
+            // Update form data with fetched values
             setFormData((prev) => ({
                 ...prev,
                 policy_name,
@@ -78,11 +86,12 @@ export default function EditSnapshotPolicyForm() {
             // Improved error handling
             setError(formError?.response?.data?.message || 'Failed to fetch snapshot policy data. Please try again later.');
         } finally {
-            setLoading(false);
+            setLoading(false); // Reset loading state
         }
     };
 
     const handleLockSnapshotChange = (e) => {
+        // Handle changes to the lock snapshots checkbox
         setFormError(null);
         setFormData((prev) => ({
             ...prev,
@@ -91,6 +100,7 @@ export default function EditSnapshotPolicyForm() {
     };
 
     const handleEnablePolicy = (e) => {
+        // Handle changes to the enable policy checkbox
         setFormError(null);
         setFormData((prev) => ({
             ...prev,
@@ -99,6 +109,7 @@ export default function EditSnapshotPolicyForm() {
     };
 
     const handleChange = (e) => {
+        // Handle changes to form fields
         setFormError(null);
         const { name, value, type, checked } = e.target;
 
@@ -122,6 +133,7 @@ export default function EditSnapshotPolicyForm() {
     };
 
     const findEmptyOrNullKeys = (obj) => {
+        // Find keys with empty or null values in the form data
         const keysWithEmptyValues = [];
         const checkValues = (currentObj, parentKey = '') => {
             Object.entries(currentObj).forEach(([key, value]) => {
@@ -140,22 +152,26 @@ export default function EditSnapshotPolicyForm() {
     };
 
     const handleSubmit = async (e) => {
+        // Handle form submission
         try {
             setFormError(null);
             setLoading(true);
             e.preventDefault();
 
+            // Validate auto delete days if deleteSnapshot is set to automatic
             if (formData.deleteSnapshot === 'automatic' && !formData.autoDeleteDays) {
                 setFormError("Please enter days!");
                 return;
             }
 
+            // Check for empty fields in the form data
             const emptyVal = findEmptyOrNullKeys(formData);
             if (emptyVal.length) {
                 setFormError(`Please enter ${emptyVal[0]}!`);
                 return;
             }
 
+            // Prepare payload for API call
             const {
                 apply_to_directory,
                 autoDeleteDays,
@@ -197,15 +213,17 @@ export default function EditSnapshotPolicyForm() {
                 delete_schedule: deleteSnapshot === 'never' ? deleteSnapshot : { option: "after", days: autoDeleteDays },
             };
 
+            // Update snapshot policy via API
             await httpServices.updateClusterSnapPolicyById(id, { snapshot_policy: preparePayload });
             console.log('Updated Successfully!');
         } catch (error) {
             console.log('🌕: error', error);
         } finally {
-            setLoading(false);
+            setLoading(false); // Reset loading state
         }
     };
 
+    // Days options for the form
     const days = [
         { id: 'everyday', title: "Every Day", value: "everyday" },
         { id: 'monday', title: "Mon", value: "monday" },
@@ -217,6 +235,7 @@ export default function EditSnapshotPolicyForm() {
         { id: 'sunday', title: "Sun", value: "sunday" },
     ];
 
+    // Display error message if any
     if (error) {
         return (<div className="mt-10 text-center text-3xl"> {error} </div>);
     }

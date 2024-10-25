@@ -1,19 +1,23 @@
 import { useEffect, useRef, useState } from 'react';
 import { LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip } from 'recharts';
 
+// Main component to display IOPS metrics
 export default function IOPS({ data }) {
-    const divRef = useRef(null);
-    const [divWidth, setDivWidth] = useState(0);
+    const divRef = useRef(null); // Reference to the chart container
+    const [divWidth, setDivWidth] = useState(0); // State to hold the width of the chart
 
+    // Transform input data for charting
     const transformedData = data.map(item => ({
         date: new Date(item.timestamp).toLocaleString('en-US', { month: 'short', day: 'numeric' }),
         read: ((item.read / 1000)),
         write: (item.write / 1000)
     }));
 
+    // Calculate maximum read and write values for display
     const maxRead = Math.max(...transformedData.map(item => item.read));
     const maxWrite = Math.max(...transformedData.map(item => item.write));
 
+    // Effect to calculate and update chart width on resize
     useEffect(() => {
         const calculateWidth = () => {
             if (divRef.current) {
@@ -27,6 +31,7 @@ export default function IOPS({ data }) {
             window.removeEventListener('resize', calculateWidth);
         };
     }, []);
+
     return <>
         <div className="text-xl !font-extralight mb-4">IOPS</div>
         <div className='flex grid-cols-2' id="iops-section">
